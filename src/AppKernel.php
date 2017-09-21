@@ -2,9 +2,14 @@
 
 namespace Fesor\SchemaExample;
 
+use Doctrine\Bundle\MigrationsBundle\Command\MigrationsDiffDoctrineCommand;
+use Doctrine\DBAL\Migrations\Provider\OrmSchemaProvider;
+use Doctrine\ORM\EntityManagerInterface;
+use Fesor\SchemaExample\Infrastructure\Doctrine\ExtendedSchemaProvider;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Component\Config\Loader\LoaderInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\Routing\RouteCollectionBuilder;
 
@@ -54,6 +59,13 @@ class AppKernel extends Kernel
                 ],
             ],
         ]);
+
+        // This step will put our new schema provider as argument for diff command
+        $c->register(OrmSchemaProvider::class)->addArgument(new Reference(EntityManagerInterface::class))->setPublic(false);
+        $c->register(ExtendedSchemaProvider::class)->setAutowired(true)->setPublic(false);
+        $c->register(MigrationsDiffDoctrineCommand::class)
+            ->addArgument(new Reference(ExtendedSchemaProvider::class))
+            ->addTag('console.command');
     }
 
     public function getLogDir()
