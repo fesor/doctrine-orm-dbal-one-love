@@ -20,8 +20,8 @@ So for this "unmanaged" part of schema we also want this to work.
 ## How to make it work
 
 If you will look at how "migration:diff" command is implemented, it allows you to provide any instance that implements
-`SchemaProvider` interface. So heres trick. We need to get `OrmSchemaProvider`, and use it to populate schema. Then we could
-pass this schema into somewhere else so we could add adittional relations.
+`SchemaProvider` interface. So here's the trick. We need to get `OrmSchemaProvider`, and use it to populate schema. Then we could
+pass this schema to someone else so it could add adittional relations.
 
 ```php
 class ExtendedSchemaProvider implements SchemaProviderInterface
@@ -43,21 +43,30 @@ class ExtendedSchemaProvider implements SchemaProviderInterface
 }
 ```
 
-In our legacy schema we will just create dummy table:
+In our legacy schema definition we will just create dummy table:
 
 ```
-public function define(Schema $schema)
+public function define(Schema $schema): void
 {
     $legacyTable = $schema->createTable('legacy_table');
 
     $legacyTable->addColumn('id', 'integer', []);
+    $legacyTable->addColumn('name', 'string');
     $legacyTable->setPrimaryKey(['id']);
-
-    return $legacyTable;
 }
 ```
 
 ### Redefining CLI command
 
+By default Doctrine Migration Bundle will not work with custom schema providers. At least until [this PR](https://github.com/doctrine/DoctrineMigrationsBundle/pull/190) will be available in release version. So we need to "copy" this command ([MigrationDiffCommand.php](src/Command/Doctrine/MigrationDiffCommand.php)).
+Then we will just register new service, which will override original command. Also we need to pass our schema provider as
+dependency to our new command:
 
+```php
+$c->register(MigrationDiffCommand::class)
+  ->addArgument(new Reference(ExtendedSchemaProvider::class))
+  ->addTag('console.command');
+```
 
+That's pretty much all. Now we could run `doctrine:migration:diff` and we will get all changes in our schema. You could
+see example migration file in [configs](configs/migrations) directory.

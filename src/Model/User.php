@@ -2,7 +2,6 @@
 
 namespace Fesor\SchemaExample\Model;
 
-use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Mapping\{Id,Column,GeneratedValue,Entity};
 
 /**
@@ -27,4 +26,10 @@ class User
      * @Column(type="string")
      */
     private $password;
+
+    /**
+     * @var string
+     * @Column(type="string")
+     */
+    private $name;
 }

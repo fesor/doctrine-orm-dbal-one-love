@@ -2,9 +2,9 @@
 
 namespace Fesor\SchemaExample;
 
-use Doctrine\Bundle\MigrationsBundle\Command\MigrationsDiffDoctrineCommand;
 use Doctrine\DBAL\Migrations\Provider\OrmSchemaProvider;
 use Doctrine\ORM\EntityManagerInterface;
+use Fesor\SchemaExample\Command\Doctrine\MigrationDiffCommand;
 use Fesor\SchemaExample\Infrastructure\Doctrine\ExtendedSchemaProvider;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Component\Config\Loader\LoaderInterface;
@@ -42,7 +42,6 @@ class AppKernel extends Kernel
             'dbal' => [
                 'driver' => 'pdo_sqlite',
                 'url' => 'sqlite:///somedb.sqlite',
-                'schema_filter' => '~^(?!legacy_)~'
             ],
             'orm' => [
                 'entity_managers' => [
@@ -60,10 +59,14 @@ class AppKernel extends Kernel
             ],
         ]);
 
+        $c->loadFromExtension('doctrine_migrations', [
+            'dir_name' => __DIR__ . '/../configs/migrations'
+        ]);
+
         // This step will put our new schema provider as argument for diff command
         $c->register(OrmSchemaProvider::class)->addArgument(new Reference(EntityManagerInterface::class))->setPublic(false);
         $c->register(ExtendedSchemaProvider::class)->setAutowired(true)->setPublic(false);
-        $c->register(MigrationsDiffDoctrineCommand::class)
+        $c->register(MigrationDiffCommand::class)
             ->addArgument(new Reference(ExtendedSchemaProvider::class))
             ->addTag('console.command');
     }
